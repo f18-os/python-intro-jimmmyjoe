@@ -3,6 +3,9 @@
 import sys, os, time, re
 from threading import Thread, enumerate
 
+redirects = re.compile(r'[<>\|]')
+matches = ''
+
 class Worker(Thread):
     def __init__(self, cmd):
         self.args = re.split(' ', cmd)
@@ -13,24 +16,47 @@ class Worker(Thread):
         print(self.name + ' is starting.')
 
 def parse(command):
+    
+    global matches 
 
     if not command:
         sys.exit(1)
 
-    args = re.split(' ', command)
-    paths = re.split(':', os.environ['PATH'])
+    matches = re.findall(redirects, command)
+    match = re.search(redirects, command)
 
+    if match is None:
+        firstArgs = re.split(' ', command)
+        firstArgs = [arg for arg in firstArgs if arg != '']
+        afterArgs = None
+        paths = re.split(':', os.environ['PATH'])
+    else:
+        splitIndex = match.start()
+        print(splitIndex)
+        
+        firstCmd = command[:splitIndex-1]
+        afterCmd = command[splitIndex+1:]
+
+        firstArgs = re.split(' ', firstCmd)
+        firstArgs = [arg for arg in firstArgs if arg != '']
+        
+        afterArgs = re.split(' ', afterCmd)
+        afterArgs = [arg for arg in afterArgs if arg != '']
+        
+        paths = re.split(':', os.environ['PATH'])
+        paths = [path for path in paths if path != '']
+        
+        print(firstArgs)
+        print(afterArgs)
+        print(paths)
+
+    return firstArgs, afterArgs, paths
+    
     # Check for input (<) and output (>) redirect.
     
     # Might need to be a simple condition check
     # because < and > simply modify file descriptors
     # and don't need to know about past/future commands.
-
-    for arg in args:
-        if(arg === '<'):
-            #
-        elif(arg === '>'):
-            #
 
     # Adjust file descriptors accordingly
 
@@ -59,17 +85,20 @@ def main():
             sys.exit(1)
             
         elif rc == 0:
-            args = re.split(' ', cmd)
-            paths = re.split(':', os.environ['PATH'])
+            
+            firstArgs, afterArgs, paths = parse(cmd)
+            print(firstArgs, afterArgs, paths)
+            #args = re.split(' ', cmd)
+            #paths = re.split(':', os.environ['PATH'])
 
             for dir in paths:
-                fullPath = '%s/%s' % (dir, args[0])
+                fullPath = '%s/%s' % (dir, firstArgs[0])
                 try:
-                    os.execve(fullPath, args, os.environ)
+                    os.execve(fullPath, firstArgs, os.environ)
                 except FileNotFoundError:
                     pass
 
-            os.write(2, ('shel: Command "%s" not found\n' % args[0]).encode())
+            os.write(2, ('shel: Command "%s" not found\n' % firstArgs[0]).encode())
             sys.exit(1)
             
         else:
