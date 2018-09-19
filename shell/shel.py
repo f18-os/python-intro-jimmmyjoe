@@ -73,6 +73,7 @@ def parse(command):
 def main():
 
     try:
+        # os.system should be a subprocess instead
         os.system('cat ~/.bashrc | grep PS1 > ./ps1.txt')
         with open('./ps1.txt', 'r') as ps1:
             line = ps1.readline()
@@ -103,6 +104,16 @@ def main():
             if afterArgs is not None:
                 redirect = afterArgs[0]
                 print(redirect)
+
+                if redirect == '|':
+                    pr, pw = os.pipe()
+                    os.set_inheritable(pr, True)
+                    os.set_inheritable(pw, True)
+                    
+                    
+                elif redirect == '<':
+                    pass
+                else: # > via regex
 
             for dir in paths:
                 fullPath = '%s/%s' % (dir, firstArgs[0])
