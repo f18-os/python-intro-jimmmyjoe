@@ -72,12 +72,16 @@ def parse(command):
 
 def main():
 
-    os.system('cat ~/.bashrc | grep PS1 > ./ps1.txt')
-    with open('./ps1.txt', 'r') as ps1:
-        line = ps1.readline()
-        split = re.split('\'', line)
-        prompt = split[1]
-    
+    try:
+        os.system('cat ~/.bashrc | grep PS1 > ./ps1.txt')
+        with open('./ps1.txt', 'r') as ps1:
+            line = ps1.readline()
+            split = re.split('\'', line)
+            prompt = split[1]
+    except FileNotFoundError: #Windows
+        prompt = 'shel$ '
+        
+        
     flag = True
     while(flag):
         cmd = input(prompt)
