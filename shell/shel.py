@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Named after Shel Silverstein
 
 import sys, os, time, re
@@ -34,7 +36,7 @@ def parse(command):
         splitIndex = match.start()
         
         firstCmd = command[:splitIndex-1]
-        afterCmd = command[splitIndex+1:]
+        afterCmd = command[splitIndex:]
 
         firstArgs = re.split(' ', firstCmd)
         firstArgs = [arg for arg in firstArgs if arg != '']
@@ -70,9 +72,11 @@ def parse(command):
 
 def main():
 
-    os.system('echo $PS1 > ./ps1.txt')
+    os.system('cat ~/.bashrc | grep PS1 > ./ps1.txt')
     with open('./ps1.txt', 'r') as ps1:
-        prompt = ps1.readline()
+        line = ps1.readline()
+        split = re.split('\'', line)
+        prompt = split[1]
     
     flag = True
     while(flag):
@@ -91,6 +95,10 @@ def main():
             
             firstArgs, afterArgs, paths = parse(cmd)
             print(firstArgs, afterArgs, paths)
+
+            if afterArgs is not None:
+                redirect = afterArgs[0]
+                print(redirect)
 
             for dir in paths:
                 fullPath = '%s/%s' % (dir, firstArgs[0])
