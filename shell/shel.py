@@ -32,7 +32,6 @@ def parse(command):
         paths = re.split(':', os.environ['PATH'])
     else:
         splitIndex = match.start()
-        print(splitIndex)
         
         firstCmd = command[:splitIndex-1]
         afterCmd = command[splitIndex+1:]
@@ -70,10 +69,14 @@ def parse(command):
     # <program> <arg0|arg1|...> {<i/o_redirect> <file_path>} {<pipe> <command>}
 
 def main():
+
+    os.system('echo $PS1 > ./ps1.txt')
+    with open('./ps1.txt', 'r') as ps1:
+        prompt = ps1.readline()
     
     flag = True
     while(flag):
-        cmd = input('>> ')
+        cmd = input(prompt)
         
         if cmd == 'quit':
             sys.exit(0)
@@ -88,8 +91,6 @@ def main():
             
             firstArgs, afterArgs, paths = parse(cmd)
             print(firstArgs, afterArgs, paths)
-            #args = re.split(' ', cmd)
-            #paths = re.split(':', os.environ['PATH'])
 
             for dir in paths:
                 fullPath = '%s/%s' % (dir, firstArgs[0])
