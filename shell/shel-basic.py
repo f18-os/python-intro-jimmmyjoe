@@ -5,28 +5,24 @@
 import sys, os, re
 
 redirects = re.compile(r'[<>\|]')
-matches = ''
 
 def parse(command):
-    
-    global matches
 
     if not command:
         sys.exit(1)
 
-    matches = re.findall(redirects, command)
     match = re.search(redirects, command)
 
     if match is None:
         firstArgs = re.split(' ', command)
-        firstArgs = [arg for arg in firstArgs if arg != '']
+        firstArgs = [arg for arg in firstArgs if arg != ''] # strip empty strings
         afterArgs = None
         paths = re.split(':', os.environ['PATH'])
     else:
-        splitIndex = match.start()
+        splitIndex = match.start() # index of first redirect char
         
         firstCmd = command[:splitIndex-1]
-        afterCmd = command[splitIndex:]
+        afterCmd = command[splitIndex:] # include first redirect char
 
         firstArgs = re.split(' ', firstCmd)
         firstArgs = [arg for arg in firstArgs if arg != '']
@@ -48,7 +44,7 @@ def main():
             line = ps1.readline()
             split = re.split('\'', line)
             prompt = split[1]
-    except FileNotFoundError: #Windows
+    except FileNotFoundError: # Windows, probably
         prompt = 'shel$ '
                 
     while(True):
@@ -65,6 +61,7 @@ def main():
             rc = os.fork() # !!!
             
             if rc == 0: # child
+                
                 for dir in paths:
                     fullPath = '%s/%s' % (dir, firstArgs[0])
                     try:
@@ -74,8 +71,9 @@ def main():
                     
             else: # parent
                 cpid = os.wait()
-        else:
-            redirect = afterArgs.pop(0)
+                
+        else: # more arguments after
+            redirect = afterArgs.pop(0) # grab and remove redirect
             
             if redirect == '|':
                 pr, pw = os.pipe()
@@ -89,7 +87,7 @@ def main():
                     print('Child: pr=%d, pw=%d' % (pr, pw))
                     stdout = sys.stdout # save stdout
                     os.close(1) # close stdout
-                    os.set_inheritable(os.dup(pw), True)
+                    os.set_inheritable(os.dup(pw), True) # first child's stdout
                     os.close(pr)
                     os.close(pw)
 
@@ -124,7 +122,6 @@ def main():
                     else:
                         cpid = os.wait()
                     
-                
             elif redirect == '<':
                 
                 rc = os.fork() # !!!
