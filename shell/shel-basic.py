@@ -51,19 +51,19 @@ def main():
     except FileNotFoundError: #Windows
         prompt = 'shel$ '
                 
-    flag = True
-    while(flag):
+    while(True):
         cmd = input(prompt)
         
         if cmd == 'quit':
             sys.exit(0)
 
         firstArgs, afterArgs, paths = parse(cmd)
-        print(firstArgs, afterArgs)
+        #print(firstArgs, afterArgs, paths)
 
         if afterArgs is None:
-            rc = os.fork()
-
+            
+            rc = os.fork() # !!!
+            
             if rc == 0: # child
                 for dir in paths:
                     fullPath = '%s/%s' % (dir, firstArgs[0])
@@ -71,25 +71,63 @@ def main():
                         os.execve(fullPath, firstArgs, os.environ)
                     except FileNotFoundError:
                         pass
+                    
             else: # parent
                 cpid = os.wait()
         else:
             redirect = afterArgs.pop(0)
             
             if redirect == '|':
-                pipe = True
                 pr, pw = os.pipe()
+                print('pr=%d, pw=%d' % (pr, pw))
                 os.set_inheritable(pr, True)
                 os.set_inheritable(pw, True)
-                rc = os.fork()
+                
+                rc = os.fork() # !!!
 
-                if rc == 0:
-                    pass
-                else:
-                    pass
+                if rc == 0: # child
+                    print('Child: pr=%d, pw=%d' % (pr, pw))
+                    stdout = sys.stdout # save stdout
+                    os.close(1) # close stdout
+                    os.set_inheritable(os.dup(pw), True)
+                    os.close(pr)
+                    os.close(pw)
+
+                    for dir in paths:
+                        fullPath = '%s/%s' % (dir, firstArgs[0])
+                        try:
+                            os.execve(fullPath, firstArgs, os.environ)
+                        except FileNotFoundError:
+                            pass
+                        
+                else: # parent
+                    cpid = os.wait()
+                    firstArgs = afterArgs
+                    afterArgs = None
+                    
+                    rc1 = os.fork() # !!!
+
+                    if rc1 == 0: # child
+                        stdin = sys.stdin # save stdin
+                        os.close(0) # close stdin
+                        os.set_inheritable(os.dup(pr), True)
+                        os.close(pr)
+                        os.close(pw)
+
+                    for dir in paths:
+                        fullPath = '%s/%s' % (dir, firstArgs[0])
+                        try:
+                            os.execve(fullPath, firstArgs, os.environ)
+                        except FileNotFoundError:
+                            pass
+                        
+                    else:
+                        cpid = os.wait()
+                    
                 
             elif redirect == '<':
-                rc = os.fork()
+                
+                rc = os.fork() # !!!
 
                 if rc == 0:
                     stdin = sys.stdin # save stdin
@@ -108,7 +146,8 @@ def main():
                     cpid = os.wait()
                     
             else: # redirect == '>'
-                rc = os.fork()
+                
+                rc = os.fork() # !!!
 
                 if rc == 0:
                     stdout = sys.stdout # save stdout
